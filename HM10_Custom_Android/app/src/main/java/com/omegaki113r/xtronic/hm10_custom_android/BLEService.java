@@ -65,10 +65,12 @@ public class BLEService extends Service implements BLECallback{
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             String _BLEDeviceName = result.getDevice().getName();
+//            Log.d("BLE_SERVICE",_BLEDeviceName);
             if(_BLEDeviceName != null && _BLEDeviceName.equals("BT05")){
                 Log.d("BLE_SERVICE","Device Found");
                 _device = result.getDevice();
                 adapter.getBluetoothLeScanner().stopScan(this);
+                gatt = _device.connectGatt(getApplicationContext(),true,BLECallback);
             }
         }
 
@@ -117,8 +119,8 @@ public class BLEService extends Service implements BLECallback{
                    BluetoothGattDescriptor descriptor = characteristic.getDescriptor(NOTIFICATION_CHARACTERISTIC);
                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                    gatt.setCharacteristicNotification(characteristic,true);
-                   characteristic.setValue(_message);
-                   gatt.writeCharacteristic(characteristic);
+//                   characteristic.setValue(_message);
+//                   gatt.writeCharacteristic(characteristic);
                }
             }
 
@@ -139,8 +141,6 @@ public class BLEService extends Service implements BLECallback{
             String _recievedMessage = characteristic.getStringValue(0);
             Log.d("BLE_SERVICE","Characteristic changed " + _recievedMessage);
             _disconnect(_recievedMessage);
-
-
         }
 
         @Override
@@ -172,7 +172,9 @@ public class BLEService extends Service implements BLECallback{
     @Override
     public void sendMessages(String _message) {
         this._message = _message;
-        gatt = _device.connectGatt(getApplicationContext(),false,BLECallback);
+        BluetoothGattCharacteristic characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
+        characteristic.setValue(_message);
+        gatt.writeCharacteristic(characteristic);
     }
 
     @Override
