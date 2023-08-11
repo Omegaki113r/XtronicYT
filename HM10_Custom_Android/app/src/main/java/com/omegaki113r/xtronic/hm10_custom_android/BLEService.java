@@ -65,8 +65,10 @@ public class BLEService extends Service implements BLECallback{
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             String _BLEDeviceName = result.getDevice().getName();
-//            Log.d("BLE_SERVICE",_BLEDeviceName);
-            if(_BLEDeviceName != null && _BLEDeviceName.equals("BT05")){
+            if(_BLEDeviceName != null){
+                Log.i("BLE_SERVICE",_BLEDeviceName);
+            }
+            if(_BLEDeviceName != null && _BLEDeviceName.equals("SpeedlessAus")){
                 Log.d("BLE_SERVICE","Device Found");
                 _device = result.getDevice();
                 adapter.getBluetoothLeScanner().stopScan(this);
@@ -100,7 +102,8 @@ public class BLEService extends Service implements BLECallback{
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if(status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothGatt.STATE_CONNECTED){
                 Log.d("BLE_SERVICE","Connected to HM10");
-                gatt.discoverServices();
+
+                gatt.requestMtu(200);
             }else if(status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothGatt.STATE_DISCONNECTED){
                 gatt.close();
             }else{
@@ -128,7 +131,7 @@ public class BLEService extends Service implements BLECallback{
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-
+            _disconnect(characteristic.getStringValue(0));
         }
 
         @Override
@@ -165,16 +168,34 @@ public class BLEService extends Service implements BLECallback{
 
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-
+            gatt.discoverServices();
         }
     };
 
     @Override
     public void sendMessages(String _message) {
         this._message = _message;
-        BluetoothGattCharacteristic characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
-        characteristic.setValue(_message);
-        gatt.writeCharacteristic(characteristic);
+        if(_message.startsWith("$READ$")){
+            BluetoothGattCharacteristic characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(NOTIFICATION_CHARACTERISTIC);
+            descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+            gatt.setCharacteristicNotification(characteristic,true);
+
+            characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
+            characteristic.setValue(_message);
+            gatt.writeCharacteristic(characteristic);
+
+            gatt.readCharacteristic(characteristic);
+        }else {
+            BluetoothGattCharacteristic characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(NOTIFICATION_CHARACTERISTIC);
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            gatt.setCharacteristicNotification(characteristic,true);
+
+            characteristic = gatt.getService(SERVICE_UUID).getCharacteristic(HM10_CHARACTERISTIC);
+            characteristic.setValue(_message);
+            gatt.writeCharacteristic(characteristic);
+        }
     }
 
     @Override

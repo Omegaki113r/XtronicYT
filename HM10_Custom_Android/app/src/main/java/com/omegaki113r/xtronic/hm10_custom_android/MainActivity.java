@@ -39,8 +39,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     BLECallback callback;
 
     TextView _recievedMessaage;
+    TextView _readMessage;
     EditText _messageToBeSent;
     Button _sendMessage;
+    Button _readMessageButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +50,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         setContentView(R.layout.activity_main);
 
          _recievedMessaage = findViewById(R.id.tv_ble_recieved);
+         _readMessage = findViewById(R.id.tv_received_message);
          _messageToBeSent = findViewById(R.id.et_message);
          _sendMessage = findViewById(R.id.btn_send_ble_message);
+         _readMessageButton = findViewById(R.id.btn_read_ble);
 
 
          _sendMessage.setOnClickListener(new View.OnClickListener() {
@@ -59,10 +63,17 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
              }
          });
 
+         _readMessageButton.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+                 String readRequest = "$READ$";
+                 callback.sendMessages(readRequest);
+             }
+         });
+
 
          Intent serviceIntent = new Intent(getApplicationContext(),BLEService.class);
          bindService(serviceIntent,connection,BIND_AUTO_CREATE);
-
     }
 
     @Override
@@ -76,7 +87,11 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                _recievedMessaage.setText(_message);
+                if(_message.startsWith("$RR$")){
+                    _readMessage.setText(_message.substring("$RR$".length()));
+                }else {
+                    _recievedMessaage.setText(_message);
+                }
             }
         });
 

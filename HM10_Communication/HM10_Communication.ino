@@ -5,7 +5,7 @@
  * @version 0.1
  * @date 2021-03-07
  *
- * @copyright Copyright (c) 2021
+ * @copyright Copyright (c) 2023
  *
  */
 
@@ -53,6 +53,10 @@ void loop()
   if (_recievedString != "")
   {
     Serial.println("Recieved: " + _recievedString); // Printout the data to Serial Monitor
+    if(!memcmp(_recievedString.c_str(),"$READ$",strlen("$READ$"))){
+      String tx = String("$RR$") + String("HEY READ\n");
+      HM10_UART.print(tx);
+    }
   }
   while (Serial.available())
   {
